@@ -7,14 +7,33 @@
   <title>Document</title>
 </head>
 <body>
+  <div id="app">
+    {{name}}{{age}}}
+  </div>
   <script src="vue.js"></script>
   <script>
     const vm = new Vue({
-      data:{
-        name:'zf',
-        age:20
+      data(){
+       return{
+         name:'zf',
+         age:20,
+         address:{
+          num:30,
+          content:'你弟弟'
+         },
+         hobby:['eat','drink',{a:1}]
+       }
       }
     })
+   // vm.address.num = '5'
+  //  vm.address = {
+  //   dog:'wangwang'
+  //  }
+   //console.log(vm.hobby[0])
+   vm.hobby.unshift({b2:2},3)
+    //console.log(vm.hobby)
+   //console.log(vm.hobby[2].a)
+   console.log(vm)
   </script>
 </body>
 </html>
