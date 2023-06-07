@@ -1,5 +1,5 @@
 import babel from 'rollup-plugin-babel'
-
+import serve from 'rollup-plugin-serve'
 // rollup 默认可以导出一个对象，作为打包的配置对象
 export default {
   input: './src/index.js', // 入口文件
@@ -13,6 +13,12 @@ export default {
   plugins: [ // 需要用到的插件如 babel，插件都是函数，直接执行
     babel({ // 执行 babel 函数时会加载配置文件 .babelrc
       exclude: 'node_modules/**' // 排除 node_modules 中的所有文件
+    }),
+    serve({
+      open: true,
+      openPage: '/public/index.html',
+      port: 3000,
+      contentBase: '' // 表示以当前根目录为基准 默认是空
     })
   ]
 }
