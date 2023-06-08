@@ -17,7 +17,6 @@ let methods = [//找到所有的变异方法
 
 methods.forEach(method => {
   newArrayProto[method] = function (...args) {//这里重写了数组的方法
-    console.log(`我调用了${method}方法`)
     let result = oldArrayProto[method].call(this, ...args)//内部调用原来的方法，函数的劫持，切片编程
 
     let inserted;
@@ -32,8 +31,6 @@ methods.forEach(method => {
         break
     }
     if (inserted) {
-      console.log('打印')
-      console.log(inserted)
       ob.observeArray(inserted)
     }
     return result

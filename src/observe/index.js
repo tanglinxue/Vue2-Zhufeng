@@ -31,14 +31,10 @@ export function defineReactive(target, key, value) {
   observe(value)//对所有的对象都进行属性劫持
   Object.defineProperty(target, key, {
     get() {//取值的时候会执行get
-      console.log('用户取值')
-      console.log(key)
       return value
     },
     set(newValue) {//修改的时候会执行set
       if (newValue === value) return
-      console.log('用户设置值')
-      console.log(key)
       value = newValue
       observe(newValue)
     }

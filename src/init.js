@@ -13,7 +13,6 @@ export function initMixin(Vue) {
     const vm = this;
     el = document.querySelector(el)
     let opts = vm.$options;
-    console.log(el)
     if (!opts.render) {// 如果用户没有自己写 render 函数
       let template
       if (el) {
