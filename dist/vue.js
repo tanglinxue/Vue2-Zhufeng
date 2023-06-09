@@ -4,6 +4,33 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Vue = factory());
 })(this, (function () { 'use strict';
 
+  function _iterableToArrayLimit(arr, i) {
+    var _i = null == arr ? null : "undefined" != typeof Symbol && arr[Symbol.iterator] || arr["@@iterator"];
+    if (null != _i) {
+      var _s,
+        _e,
+        _x,
+        _r,
+        _arr = [],
+        _n = !0,
+        _d = !1;
+      try {
+        if (_x = (_i = _i.call(arr)).next, 0 === i) {
+          if (Object(_i) !== _i) return;
+          _n = !1;
+        } else for (; !(_n = (_s = _x.call(_i)).done) && (_arr.push(_s.value), _arr.length !== i); _n = !0);
+      } catch (err) {
+        _d = !0, _e = err;
+      } finally {
+        try {
+          if (!_n && null != _i.return && (_r = _i.return(), Object(_r) !== _r)) return;
+        } finally {
+          if (_d) throw _e;
+        }
+      }
+      return _arr;
+    }
+  }
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
@@ -34,6 +61,28 @@
       writable: false
     });
     return Constructor;
+  }
+  function _slicedToArray(arr, i) {
+    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
+  }
+  function _arrayWithHoles(arr) {
+    if (Array.isArray(arr)) return arr;
+  }
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+    return arr2;
+  }
+  function _nonIterableRest() {
+    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
   function _toPrimitive(input, hint) {
     if (typeof input !== "object" || input === null) return input;
@@ -185,12 +234,6 @@
   var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>")); // 匹配标签结尾的 </div>
   var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性的
   var startTagClose = /^\s*(\/?)>/; // 匹配标签结束的 >
-  function compileToFunction(template) {
-    parseHTML(template);
-    //1.就是将template转化成ast语法树
-    //2.生成render方法(render方法执行后的返回结果就是虚拟DOM)
-  }
-
   function parseHTML(html) {
     var ELEMETN_TYPE = 1;
     var TEXT_TYPE = 3;
@@ -211,7 +254,6 @@
 
     //利用栈型解构来构造一棵树
     function start(tag, attrs) {
-      console.log(tag, attrs, '开始标签');
       var node = createASTElement(tag, attrs); //创造一个ast节点
       if (!root) {
         //看一下是否是空树
@@ -227,7 +269,6 @@
     }
 
     function chars(text) {
-      console.log(text, '文本');
       text = text.replace(/\s/g, '');
       text && currentParent.children.push({
         type: TEXT_TYPE,
@@ -236,7 +277,6 @@
       });
     }
     function end(tag) {
-      console.log(tag, '结束');
       stack.pop(); //弹出最后一个
       currentParent = stack[stack.length - 1];
     }
@@ -293,7 +333,42 @@
         }
       }
     }
-    console.log(root);
+    return root;
+  }
+
+  function genProps(attrs) {
+    var str = '';
+    var _loop = function _loop() {
+      var attr = attrs[i];
+      if (attr.name === 'style') {
+        var obj = {};
+        attr.value.split(';').forEach(function (item) {
+          var _item$split = item.split(':'),
+            _item$split2 = _slicedToArray(_item$split, 2),
+            key = _item$split2[0],
+            value = _item$split2[1];
+          obj[key] = value;
+        });
+        attr.value = obj;
+      }
+      str += "".concat(attr.name, ":").concat(JSON.stringify(attr.value), ",");
+    };
+    for (var i = 0; i < attrs.length; i++) {
+      _loop();
+    }
+    return "{".concat(str.slice(0, -1), "}");
+  }
+  function codegen(ast) {
+    var code = "_c('".concat(ast.tag, "',").concat(ast.attrs.length > 0 ? genProps(ast.attrs) : 'null', ")").concat(ast.genChildren);
+    console.log(code);
+    return code;
+  }
+  function compileToFunction(template) {
+    //1.就是将template转化成ast语法树
+    var ast = parseHTML(template);
+    console.log(ast);
+    //2.生成render方法(render方法执行后的返回结果就是虚拟DOM)
+    codegen(ast);
   }
 
   function initMixin(Vue) {
