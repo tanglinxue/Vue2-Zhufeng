@@ -336,6 +336,7 @@
     return root;
   }
 
+  var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
   function genProps(attrs) {
     var str = '';
     var _loop = function _loop() {
@@ -358,18 +359,119 @@
     }
     return "{".concat(str.slice(0, -1), "}");
   }
+  function gen(node) {
+    if (node.type === 1) {
+      return codegen(node);
+    } else {
+      var text = node.text;
+      if (!defaultTagRE.test(text)) {
+        return "_v(".concat(JSON.stringify(text), ")");
+      } else {
+        var tokens = [];
+        var match;
+        defaultTagRE.lastIndex = 0;
+        var lastIndex = 0;
+        while (match = defaultTagRE.exec(text)) {
+          var index = match.index;
+          if (index > lastIndex) {
+            tokens.push(JSON.stringify(text.slice(lastIndex, index)));
+          }
+          tokens.push("_s(".concat(match[1].trim(), ")"));
+          lastIndex = index + match[0].length;
+        }
+        if (lastIndex < text.length) {
+          tokens.push(JSON.stringify(text.slice(lastIndex)));
+        }
+        return "_v(".concat(tokens.join('+'), ")");
+      }
+    }
+  }
+  function genChildren(children) {
+    return children.map(function (child) {
+      return gen(child);
+    }).join(',');
+  }
   function codegen(ast) {
-    var code = "_c('".concat(ast.tag, "',").concat(ast.attrs.length > 0 ? genProps(ast.attrs) : 'null', ")").concat(ast.genChildren);
-    console.log(code);
+    var children = genChildren(ast.children);
+    var code = "_c('".concat(ast.tag, "',").concat(ast.attrs.length > 0 ? genProps(ast.attrs) : 'null').concat(ast.children.length ? ",".concat(children) : '', ")");
     return code;
   }
   function compileToFunction(template) {
     //1.就是将template转化成ast语法树
     var ast = parseHTML(template);
-    console.log(ast);
     //2.生成render方法(render方法执行后的返回结果就是虚拟DOM)
-    codegen(ast);
+    var code = codegen(ast);
+    code = "with(this){return ".concat(code, "}");
+    var render = new Function(code);
+    return render;
   }
+
+  function createElementVNode(vm, tag, data) {
+    if (data == null) {
+      data = {};
+    }
+    var key = data.key;
+    if (key) {
+      delete data.key;
+    }
+    for (var _len = arguments.length, children = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+      children[_key - 3] = arguments[_key];
+    }
+    return vnode(vm, tag, key, data, children);
+  }
+  function createTextVNode(vm, text) {
+    return vnode(vm, undefined, undefined, undefined, undefined, text);
+  }
+
+  //ast一样吗?ast做的是语法层面的转化，他描述的是语法本身(可以描述js css html)
+  //我们的虚拟dom是描述的dom元素，可以增加一些自定义属性(描述dom的)
+  function vnode(vm, tag, key, props, children, text) {
+    return {
+      vm: vm,
+      tag: tag,
+      key: key,
+      props: props,
+      children: children,
+      text: text
+    };
+  }
+
+  function mountComponent(vm, el) {
+    console.log(vm._render());
+    //调用render方法产生虚拟节点
+    vm._update(vm._render());
+
+    //根据虚拟DOM产生真实DOM
+
+    //插入到el元素中
+  }
+
+  function initLifeCycle(Vue) {
+    Vue.prototype._update = function () {
+      console.log('update2');
+    };
+    Vue.prototype._render = function () {
+      console.log('222');
+      return this.$options.render.call(this); //通过ast语法转义后生成的render
+    };
+
+    Vue.prototype._s = function (value) {
+      if (_typeof(value) !== 'object') return value;
+      return JSON.stringify(value);
+    };
+    Vue.prototype._c = function () {
+      return createElementVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+    Vue.prototype._v = function () {
+      return createTextVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+  }
+
+  //vue核心流程  1.创造了响应式数据 2.模板转换成ast语法树
+  //3.将ast语法树转换了render函数 4.后续每次数据更新可以只执行render函数 无需再次执行ast转化的流程
+
+  //render函数会产生虚拟节点(使用响应式数据)
+  //根据生成的虚拟节点创造真实的DOM
 
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
@@ -398,9 +500,11 @@
           // 这里就拿到了用户传入的 template 或是 el 转化的 template 字符串
           // 在这里对模板进行编译
           var render = compileToFunction(template);
+          console.log(render);
           opts.render = render;
         }
       }
+      mountComponent(vm); //组件的挂在
     };
   }
 
@@ -410,6 +514,7 @@
 
   //通过方法传递 Vue，然后在方法中添加原型方法
   initMixin(Vue); // 传递 Vue 的同时扩展了 _init 方法
+  initLifeCycle(Vue);
 
   return Vue;
 
