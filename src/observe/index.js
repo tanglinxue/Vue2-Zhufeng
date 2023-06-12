@@ -1,5 +1,6 @@
 
 import { newArrayProto } from './array'
+import Dep from './dep'
 class Observe {
   constructor(data) {
     Object.defineProperty(data, '__ob__', {
@@ -29,6 +30,7 @@ class Observe {
 export function defineReactive(target, key, value) {
   //闭包
   observe(value)//对所有的对象都进行属性劫持
+  let dep = new Dep()//每个属性都有一个dep
   Object.defineProperty(target, key, {
     get() {//取值的时候会执行get
       return value

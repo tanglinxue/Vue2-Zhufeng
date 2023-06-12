@@ -135,6 +135,15 @@
     };
   });
 
+  var id$1 = 0;
+  var Dep$1 = /*#__PURE__*/_createClass(function Dep() {
+    _classCallCheck(this, Dep);
+    this.id = id$1++;
+    this.subs = []; //这里存放着当前属性对应的watcher有哪些
+  });
+
+  Dep$1.target = null;
+
   var Observe = /*#__PURE__*/function () {
     function Observe(data) {
       _classCallCheck(this, Observe);
@@ -173,6 +182,7 @@
   function defineReactive(target, key, value) {
     //闭包
     observe(value); //对所有的对象都进行属性劫持
+    new Dep$1(); //每个属性都有一个dep
     Object.defineProperty(target, key, {
       get: function get() {
         //取值的时候会执行get
@@ -406,6 +416,25 @@
     return render;
   }
 
+  var id = 0;
+  var Watcher = /*#__PURE__*/function () {
+    function Watcher(vm, fn, options) {
+      _classCallCheck(this, Watcher);
+      this.id = id++;
+      this.renderWatcher = options;
+      this.getter = fn; //getter意味着调用这个函数可以发生取值操作
+      this.get();
+    }
+    _createClass(Watcher, [{
+      key: "get",
+      value: function get() {
+        Dep.target = this;
+        this.getter();
+      }
+    }]);
+    return Watcher;
+  }(); //需要给每个属性增加一个dep
+
   function createElementVNode(vm, tag, data) {
     if (data == null) {
       data = {};
@@ -505,7 +534,10 @@
   function mountComponent(vm, el) {
     vm.$el = el;
     //调用render方法产生虚拟节点
-    vm._update(vm._render());
+    var updateComponent = function updateComponent() {
+      vm._update(vm._render());
+    };
+    new Watcher(vm, updateComponent, true);
 
     //根据虚拟DOM产生真实DOM
 
