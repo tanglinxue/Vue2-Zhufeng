@@ -436,22 +436,52 @@
     };
   }
 
-  function mountComponent(vm, el) {
-    console.log(vm._render());
-    //调用render方法产生虚拟节点
-    vm._update(vm._render());
-
-    //根据虚拟DOM产生真实DOM
-
-    //插入到el元素中
+  function createElm(vnode) {
+    var tag = vnode.tag,
+      props = vnode.props,
+      children = vnode.children,
+      text = vnode.text;
+    var data = props;
+    if (typeof tag === 'string') {
+      vnode.el = document.createElement(tag);
+      patchProps(vnode.el, data);
+      children.forEach(function (child) {
+        vnode.el.appendChild(createElm(child));
+      });
+    } else {
+      vnode.el = document.createTextNode(text);
+    }
+    return vnode.el;
   }
-
+  function patchProps(el, props) {
+    for (var key in props) {
+      if (key === 'style') {
+        for (var styleName in props.style) {
+          el.style[styleName] = props.style[styleName];
+        }
+      } else {
+        el.setAttribute(key, props[key]);
+      }
+    }
+  }
+  function patch(oldVNode, vnode) {
+    var isRealElement = oldVNode.nodeType;
+    if (isRealElement) {
+      var elm = oldVNode; //获取真实元素
+      var parentElm = elm.parentNode; //拿到父元素
+      console.log(vnode);
+      var newElm = createElm(vnode);
+      parentElm.insertBefore(newElm, elm.nextSibling);
+      parentElm.removeChild(elm);
+      return newElm;
+    }
+  }
   function initLifeCycle(Vue) {
-    Vue.prototype._update = function () {
-      console.log('update2');
+    Vue.prototype._update = function (vnode) {
+      var el = this.$el;
+      this.$el = patch(el, vnode);
     };
     Vue.prototype._render = function () {
-      console.log('222');
       return this.$options.render.call(this); //通过ast语法转义后生成的render
     };
 
@@ -472,6 +502,15 @@
 
   //render函数会产生虚拟节点(使用响应式数据)
   //根据生成的虚拟节点创造真实的DOM
+  function mountComponent(vm, el) {
+    vm.$el = el;
+    //调用render方法产生虚拟节点
+    vm._update(vm._render());
+
+    //根据虚拟DOM产生真实DOM
+
+    //插入到el元素中
+  }
 
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
@@ -504,7 +543,7 @@
           opts.render = render;
         }
       }
-      mountComponent(vm); //组件的挂在
+      mountComponent(vm, el); //组件的挂在
     };
   }
 
