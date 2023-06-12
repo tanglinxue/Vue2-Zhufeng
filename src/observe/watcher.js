@@ -1,3 +1,5 @@
+import Dep from './dep'
+
 let id = 0;
 class Watcher {
   constructor(vm, fn, options) {
@@ -7,8 +9,9 @@ class Watcher {
     this.get()
   }
   get() {
-    Dep.target = this;
+    Dep.target = this; //静态属性就是只有一份
     this.getter()
+    Dep.target = null
   }
 }
 

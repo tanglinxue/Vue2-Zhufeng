@@ -33,6 +33,9 @@ export function defineReactive(target, key, value) {
   let dep = new Dep()//每个属性都有一个dep
   Object.defineProperty(target, key, {
     get() {//取值的时候会执行get
+      if (Dep.target) {
+        dep.depend() //让这个属性的收集器记住当前的watcher
+      }
       return value
     },
     set(newValue) {//修改的时候会执行set
