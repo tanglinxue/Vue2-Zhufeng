@@ -136,13 +136,23 @@
   });
 
   var id$1 = 0;
-  var Dep$1 = /*#__PURE__*/_createClass(function Dep() {
-    _classCallCheck(this, Dep);
-    this.id = id$1++;
-    this.subs = []; //这里存放着当前属性对应的watcher有哪些
-  });
-
-  Dep$1.target = null;
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+      this.id = id$1++;
+      this.subs = []; //这里存放着当前属性对应的watcher有哪些
+    }
+    _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        Dep.target.addDep(this);
+        // 这里我们不希望放重复的watcher，而且刚才只是一个单向的关系
+        this.subs.push(Dep.target);
+      }
+    }]);
+    return Dep;
+  }();
+  Dep.target = null;
 
   var Observe = /*#__PURE__*/function () {
     function Observe(data) {
@@ -182,10 +192,14 @@
   function defineReactive(target, key, value) {
     //闭包
     observe(value); //对所有的对象都进行属性劫持
-    new Dep$1(); //每个属性都有一个dep
+    var dep = new Dep(); //每个属性都有一个dep
     Object.defineProperty(target, key, {
       get: function get() {
         //取值的时候会执行get
+        if (Dep.target) {
+          dep.depend(); //让这个属性的收集器记住当前的watcher
+        }
+
         return value;
       },
       set: function set(newValue) {
@@ -423,13 +437,15 @@
       this.id = id++;
       this.renderWatcher = options;
       this.getter = fn; //getter意味着调用这个函数可以发生取值操作
+      this.deps = [];
       this.get();
     }
     _createClass(Watcher, [{
       key: "get",
       value: function get() {
-        Dep.target = this;
+        Dep.target = this; //静态属性就是只有一份
         this.getter();
+        Dep.target = null;
       }
     }]);
     return Watcher;

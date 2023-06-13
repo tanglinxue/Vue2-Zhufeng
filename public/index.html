@@ -11,7 +11,7 @@
 <body>
   <div id="app" style="color:yellow;background:blue">
     <span>{{age}}</span>
-    <div style="color:red">天 {{ name }} world {{ age}}tanglinxue</div>
+    <div style="color:red">天 {{ name }} {{ name }}world {{ age}}tanglinxue</div>
 
     <span>{{address}}</span>
   </div>
@@ -41,7 +41,7 @@
    //console.log(vm.hobby[2].a)
    //console.log(vm)
    setTimeout(()=>{
-    vm.name = 'tanglinxue'
+     vm.name = 'tanglinxue'
      vm._update(vm._render())
    },1000)
   </script>
