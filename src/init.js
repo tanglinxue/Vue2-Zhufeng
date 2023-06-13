@@ -27,7 +27,6 @@ export function initMixin(Vue) {
       if (template) {// 这里就拿到了用户传入的 template 或是 el 转化的 template 字符串
         // 在这里对模板进行编译
         const render = compileToFunction(template)
-        console.log(render)
         opts.render = render
       }
     }

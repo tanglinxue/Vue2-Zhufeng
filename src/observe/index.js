@@ -42,6 +42,7 @@ export function defineReactive(target, key, value) {
       if (newValue === value) return
       value = newValue
       observe(newValue)
+      dep.notify()
     }
   })
 }

@@ -7,13 +7,50 @@ class Watcher {
     this.renderWatcher = options
     this.getter = fn; //getter意味着调用这个函数可以发生取值操作
     this.deps = []
+    this.depsId = new Set()
     this.get()
   }
   get() {
     Dep.target = this; //静态属性就是只有一份
     this.getter()
     Dep.target = null
+  }
+  addDep(dep) {
+    let id = dep.id;
+    if (!this.depsId.has(id)) {
+      this.deps.push(dep)
+      this.depsId.add(id)
+      dep.addSub(this) //watcher已经记住了dep了而且去重，此时让dep也记住watcher
+    }
+  }
+  update() {
+    queueWatcher(this)
+  }
+  run() {
+    this.get()
+  }
+}
 
+let queue = [];
+let has = {};
+let pending = false
+
+function flushSchedulerQueue() {
+  let flushQueue = queue.slice(0)
+  queue = [];
+  has = {};
+  pending = false
+  flushQueue.forEach(q => q.run())
+}
+function queueWatcher(watcher) {
+  const id = watcher.id;
+  if (!has[id]) {
+    queue.push(watcher)
+    has[id] = true
+    if (!pending) {
+      setTimeout(flushSchedulerQueue, 0)
+      pending = true
+    }
   }
 }
 

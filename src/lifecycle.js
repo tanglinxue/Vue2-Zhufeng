@@ -34,7 +34,6 @@ function patch(oldVNode, vnode) {
   if (isRealElement) {
     const elm = oldVNode; //获取真实元素
     const parentElm = elm.parentNode; //拿到父元素
-    console.log(vnode)
     let newElm = createElm(vnode)
     parentElm.insertBefore(newElm, elm.nextSibling)
     parentElm.removeChild(elm)
@@ -74,8 +73,8 @@ export function mountComponent(vm, el) {
     vm._update(vm._render())
   }
 
-  new Watcher(vm, updateComponent, true)
-
+  const watcher = new Watcher(vm, updateComponent, true)
+  console.log(watcher)
   //根据虚拟DOM产生真实DOM
 
   //插入到el元素中

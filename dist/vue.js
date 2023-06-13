@@ -145,9 +145,21 @@
     _createClass(Dep, [{
       key: "depend",
       value: function depend() {
+        //让watcher记住dep
         Dep.target.addDep(this);
         // 这里我们不希望放重复的watcher，而且刚才只是一个单向的关系
-        this.subs.push(Dep.target);
+      }
+    }, {
+      key: "addSub",
+      value: function addSub(watcher) {
+        this.subs.push(watcher);
+      }
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (watcher) {
+          return watcher.update();
+        });
       }
     }]);
     return Dep;
@@ -207,6 +219,7 @@
         if (newValue === value) return;
         value = newValue;
         observe(newValue);
+        dep.notify();
       }
     });
   }
@@ -438,6 +451,7 @@
       this.renderWatcher = options;
       this.getter = fn; //getter意味着调用这个函数可以发生取值操作
       this.deps = [];
+      this.depsId = new Set();
       this.get();
     }
     _createClass(Watcher, [{
@@ -447,9 +461,52 @@
         this.getter();
         Dep.target = null;
       }
+    }, {
+      key: "addDep",
+      value: function addDep(dep) {
+        var id = dep.id;
+        if (!this.depsId.has(id)) {
+          this.deps.push(dep);
+          this.depsId.add(id);
+          dep.addSub(this); //watcher已经记住了dep了而且去重，此时让dep也记住watcher
+        }
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        queueWatcher(this);
+      }
+    }, {
+      key: "run",
+      value: function run() {
+        this.get();
+      }
     }]);
     return Watcher;
-  }(); //需要给每个属性增加一个dep
+  }();
+  var queue = [];
+  var has = {};
+  var pending = false;
+  function flushSchedulerQueue() {
+    var flushQueue = queue.slice(0);
+    queue = [];
+    has = {};
+    pending = false;
+    flushQueue.forEach(function (q) {
+      return q.run();
+    });
+  }
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+    if (!has[id]) {
+      queue.push(watcher);
+      has[id] = true;
+      if (!pending) {
+        setTimeout(flushSchedulerQueue, 0);
+        pending = true;
+      }
+    }
+  }
 
   function createElementVNode(vm, tag, data) {
     if (data == null) {
@@ -514,7 +571,6 @@
     if (isRealElement) {
       var elm = oldVNode; //获取真实元素
       var parentElm = elm.parentNode; //拿到父元素
-      console.log(vnode);
       var newElm = createElm(vnode);
       parentElm.insertBefore(newElm, elm.nextSibling);
       parentElm.removeChild(elm);
@@ -553,8 +609,8 @@
     var updateComponent = function updateComponent() {
       vm._update(vm._render());
     };
-    new Watcher(vm, updateComponent, true);
-
+    var watcher = new Watcher(vm, updateComponent, true);
+    console.log(watcher);
     //根据虚拟DOM产生真实DOM
 
     //插入到el元素中
@@ -587,7 +643,6 @@
           // 这里就拿到了用户传入的 template 或是 el 转化的 template 字符串
           // 在这里对模板进行编译
           var render = compileToFunction(template);
-          console.log(render);
           opts.render = render;
         }
       }
