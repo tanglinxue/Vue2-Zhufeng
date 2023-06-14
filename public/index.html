@@ -31,22 +31,29 @@
       },
       el: '#app'
     })
+
+    vm.$nextTick(() => {
+      console.log(vm.name)
+    })
+    vm.name = 'tlx'
+
+
     // vm.address.num = '5'
     //  vm.address = {
     //   dog:'wangwang'
     //  }
     //console.log(vm.hobby[0])
-    vm.hobby.unshift({ b2: 2 }, 3)
+    //vm.hobby.unshift({ b2: 2 }, 3)
     //console.log(vm.hobby)
     //console.log(vm.hobby[2].a)
     //console.log(vm)
-    setTimeout(() => {
-      vm.name = 'tanglinxue'
-      vm.name = 'tanglinxue2'
-      vm.name = 'tanglinxue3'
-      vm.name = 'tanglinxue4'
-      // vm._update(vm._render())
-    }, 2000)
+    // setTimeout(() => {
+    //   vm.name = 'tanglinxue'
+    //   vm.name = 'tanglinxue2'
+    //   vm.name = 'tanglinxue3'
+    //   vm.name = 'tanglinxue4'
+    //   // vm._update(vm._render())
+    // }, 2000)
   </script>
 </body>
 

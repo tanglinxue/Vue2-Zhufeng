@@ -27,6 +27,7 @@ class Watcher {
     queueWatcher(this)
   }
   run() {
+    console.log('run')
     this.get()
   }
 }
@@ -48,12 +49,54 @@ function queueWatcher(watcher) {
     queue.push(watcher)
     has[id] = true
     if (!pending) {
-      setTimeout(flushSchedulerQueue, 0)
+      nextTick(flushSchedulerQueue, 0)
       pending = true
     }
   }
 }
 
+
+let callbacks = []
+let waiting = false;
+function flushCallbacks() {
+  let cbs = callbacks.slice(0)
+  waiting = false;
+  callbacks = []
+  cbs.forEach(cb => cb())
+}
+
+let timerFunc
+if (Promise) {
+  timerFunc = () => {
+    Promise.resolve().then(flushCallbacks)
+  }
+} else if (MutationObserver) {
+  let observer = new MutationObserver(flushCallbacks)
+  let textNode = document.createTextNode()
+  observer.observe(textNode, {
+    characterData: true
+  })
+  timerFunc = () => {
+    textNode.textContent = 2
+  }
+} else if (setImmediate) {
+  timerFunc = () => {
+    setImmediate(flushCallbacks)
+  }
+} else {
+  timerFunc = () => {
+    setTimeout(flushCallbacks)
+  }
+}
+
+
+export function nextTick(cb) {
+  callbacks.push(cb)
+  if (!waiting) {
+    timerFunc()
+    waiting = true
+  }
+}
 //需要给每个属性增加一个dep
 //一个组件中有多少个属性，(n个属性会对应一个视图) ，n个dep对应一个watcher
 //一个属性对应多个视图

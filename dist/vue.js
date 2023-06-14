@@ -479,6 +479,7 @@
     }, {
       key: "run",
       value: function run() {
+        console.log('run');
         this.get();
       }
     }]);
@@ -502,9 +503,49 @@
       queue.push(watcher);
       has[id] = true;
       if (!pending) {
-        setTimeout(flushSchedulerQueue, 0);
+        nextTick(flushSchedulerQueue);
         pending = true;
       }
+    }
+  }
+  var callbacks = [];
+  var waiting = false;
+  function flushCallbacks() {
+    var cbs = callbacks.slice(0);
+    waiting = false;
+    callbacks = [];
+    cbs.forEach(function (cb) {
+      return cb();
+    });
+  }
+  var timerFunc;
+  if (Promise) {
+    timerFunc = function timerFunc() {
+      Promise.resolve().then(flushCallbacks);
+    };
+  } else if (MutationObserver) {
+    var observer = new MutationObserver(flushCallbacks);
+    var textNode = document.createTextNode();
+    observer.observe(textNode, {
+      characterData: true
+    });
+    timerFunc = function timerFunc() {
+      textNode.textContent = 2;
+    };
+  } else if (setImmediate) {
+    timerFunc = function timerFunc() {
+      setImmediate(flushCallbacks);
+    };
+  } else {
+    timerFunc = function timerFunc() {
+      setTimeout(flushCallbacks);
+    };
+  }
+  function nextTick(cb) {
+    callbacks.push(cb);
+    if (!waiting) {
+      timerFunc();
+      waiting = true;
     }
   }
 
@@ -653,7 +694,7 @@
   function Vue(options) {
     this._init(options);
   }
-
+  Vue.prototype.$nextTick = nextTick;
   //通过方法传递 Vue，然后在方法中添加原型方法
   initMixin(Vue); // 传递 Vue 的同时扩展了 _init 方法
   initLifeCycle(Vue);
