@@ -7,7 +7,8 @@
   <title>Document</title>
 </head>
 <body>
-  <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.10/vue.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.10/vue.min.js"></script> 
+  <!-- <script src="vue.js"></script> -->
   <div id="app">
     <div>{{name}}</div>
     <span>{{age}}}</span>
@@ -15,12 +16,26 @@
   <script>
   
     Vue.mixin({
+      created() {
+        console.log('beforeCreate2')
+      },
       data(){
-        return{
-          xxx:'你好'
-        }
-      }
+       return{
+         aaa:'xxxx'
+       }
+      },
     })
+    Vue.mixin({
+      created() {
+        console.log('beforeCreate3')
+      },
+       data(){
+       return{
+         bbb:'xxxx'
+       }
+      },
+    })
+    
     const vm = new Vue({
       data(){
        return{
@@ -34,10 +49,10 @@
        }
       },
       created() {
-        console.log(this.xxx)
-        console.log('beforeCreate')
+        console.log('beforeCreate1')
       },
     })
+    console.log(Vue.options.data())
   </script>
 </body>
 </html>
