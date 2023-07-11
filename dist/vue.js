@@ -698,6 +698,26 @@
   //通过方法传递 Vue，然后在方法中添加原型方法
   initMixin(Vue); // 传递 Vue 的同时扩展了 _init 方法
   initLifeCycle(Vue);
+  Vue.options = {};
+  function mergeOptions(parent, child) {
+    var options = {};
+    for (var key in parent) {
+      mergeFiled(key);
+    }
+    for (var _key in child) {
+      if (!parent.hasOwnPerperty(_key)) {
+        mergeFiled(_key);
+      }
+    }
+    function mergeFiled(key) {
+      options[key] = child[key] || parent[key];
+    }
+    return options;
+  }
+  Vue.mixin = function (mixin) {
+    this.options = mergeOptions(this.options, mixin);
+    return this;
+  };
 
   return Vue;
 
