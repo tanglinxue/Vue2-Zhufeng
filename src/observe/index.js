@@ -14,12 +14,16 @@ class Observe {
       data.__proto__ = newArrayProto
       this.observeArray(data)//如果数组中放的是对象，是可以监控到对象的变化
     } else {
-      this.walk(data)// 对 data 进行遍历，劫持属性
+      this.walk(data)// 对data进行遍历，劫持属性
     }
 
   }
+
+  /**
+  * 循环 data 对象，对属性进行劫持，为 data 对象 “重新定义” 属性
+  * @param {object} data 要循环劫持属性的对象
+  */
   walk(data) {
-    //重新定义属性
     Object.keys(data).forEach(key => defineReactive(data, key, data[key]))
   }
   observeArray(data) {
@@ -27,10 +31,18 @@ class Observe {
   }
 }
 
+
+/**
+ * 对对象的某个属性进行劫持，添加 getter 和 setter
+ * @param {object} target 劫持对象
+ * @param {string} key 劫持属性
+ * @param {*} value 属性值
+ */
 export function defineReactive(target, key, value) {
-  //闭包
-  observe(value)//对所有的对象都进行属性劫持
+  // 下面的 get 和 set 是闭包，在读取或设置 target[key] 时 value 不会销毁
+  observe(value)// 递归对对象的属性值也进行劫持，递归结束条件在 observe 函数中
   let dep = new Dep()//每个属性都有一个dep
+
   Object.defineProperty(target, key, {
     get() {//取值的时候会执行get
       if (Dep.target) {
@@ -40,14 +52,18 @@ export function defineReactive(target, key, value) {
     },
     set(newValue) {//修改的时候会执行set
       if (newValue === value) return
-      value = newValue
-      observe(newValue)
+      observe(newValue) // 如果设置的值是对象，还得对这个对象进行劫持
+      value = newValue // 这里将新值赋值给 value，这样当取值执行 get 时拿到的就是新值，因为闭包不会销毁
       dep.notify()
     }
   })
 }
 
 
+/**
+ * 对数据对象进行劫持，给其属性添加 getter 和 setter
+ * @param {object} data 要劫持的数据对象
+ */
 export function observe(data) {
   if (typeof data !== 'object' || data === null) {
     return  // 只对对象进行劫持
