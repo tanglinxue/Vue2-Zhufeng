@@ -18,7 +18,6 @@ function initData(vm) {
   }
 }
 
-
 /**
  * 将 vm[key] 代理到 vm[target][key] 上
  * @param {object} vm 上下文
