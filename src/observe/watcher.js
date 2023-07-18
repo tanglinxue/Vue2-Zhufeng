@@ -41,7 +41,7 @@ class Watcher {
   * react 是整棵树更新，vue 是组件级更新
   */
   update() {
-    queueWatcher(this)
+    queueWatcher(this)  // 把当前要更新渲染的 watcher 暂存起来
   }
   run() {
     console.log('run')
@@ -49,54 +49,72 @@ class Watcher {
   }
 }
 
-let queue = [];
-let has = {};
-let pending = false
+let queue = []; // 存 watcher 的队列
+let has = {}; // 用于去重的对象
+let pending = false  // 防抖的控制变量
 
+
+/**
+ * 刷新并调度队列，从队列中取出目前要更新渲染的 watcher 进行更新，然后清空队列
+ */
 function flushSchedulerQueue() {
-  let flushQueue = queue.slice(0)
-  queue = [];
+  let flushQueue = queue.slice(0) // 复制一份
+  queue = [];   // 清空当前队列，后面进来的 watcher 就等下一次调度
   has = {};
-  pending = false
-  flushQueue.forEach(q => q.run())
+  pending = false // 开始调度后将 pending 置为 false，这样此时再有数据改变，那么其 watcher 就会再入队列等待下一次调度
+  flushQueue.forEach(watcher => watcher.run())  // 让队列中的 watcher 进行更新渲染
 }
+
+/**
+ * 将要更新渲染的 watcher 缓存起来，在执行完同步代码后，开始执行异步代码时再统一更新渲染
+ * @param {Watcher} watcher 要缓存的 watcher
+ */
 function queueWatcher(watcher) {
   const id = watcher.id;
-  if (!has[id]) {
-    queue.push(watcher)
-    has[id] = true
+  if (!has[id]) {  // 这里对 watcher 进行去重，这样保证一个组件下多个数据同时更新也只触发一次渲染
+    queue.push(watcher)  // 缓存 watcher
+    has[id] = true // 用于去重
     if (!pending) {
-      nextTick(flushSchedulerQueue, 0)
+      nextTick(flushSchedulerQueue, 0) // 同步代码中数据全部改变后再执行异步任务 flushSchedulerQueue
       pending = true
     }
   }
 }
 
+let callbacks = []  // 存放 nextTick 异步的回调函数
+let waiting = false; // 是否批处理回调函数的标识
 
-let callbacks = []
-let waiting = false;
+/**
+ * 对 nextTick 传入的回调函数队列进行批处理
+ */
 function flushCallbacks() {
-  let cbs = callbacks.slice(0)
-  waiting = false;
-  callbacks = []
-  cbs.forEach(cb => cb())
+  let cbs = callbacks.slice(0) // 拷贝一份
+  waiting = false;  // 重置防抖标识
+  callbacks = []// 清空
+  cbs.forEach(cb => cb())// 依次调用队列中的回调函数
 }
 
+/**
+ * 将传入的回调函数 cb 放入队列中维护，先传入的 cb 后面批处理时会先调用
+ * 当同一轮事件循环中的同步代码执行完成后，就会从队列中依次调用回调函数
+ * 用于统一用户使用的异步方式和底层源码使用的异步方式
+ * @param {function} cb 要异步调用的回调函数
+ */
 let timerFunc
-if (Promise) {
+if (Promise) { // 支持 promise
   timerFunc = () => {
     Promise.resolve().then(flushCallbacks)
   }
-} else if (MutationObserver) {
-  let observer = new MutationObserver(flushCallbacks)
+} else if (MutationObserver) { //h5 的 api，也是微任务。
+  let observer = new MutationObserver(flushCallbacks)   // 传入的回调函数是异步执行的
   let textNode = document.createTextNode()
-  observer.observe(textNode, {
+  observer.observe(textNode, {  // observer 监控 textNode 内容，内容发生改变就执行 flushCallbacks()
     characterData: true
   })
   timerFunc = () => {
     textNode.textContent = 2
   }
-} else if (setImmediate) {
+} else if (setImmediate) { //ie 专享，性能比 setTimeout 好一点。
   timerFunc = () => {
     setImmediate(flushCallbacks)
   }
@@ -108,9 +126,9 @@ if (Promise) {
 
 
 export function nextTick(cb) {
-  callbacks.push(cb)
+  callbacks.push(cb)// 将回调放入队列中
   if (!waiting) {
-    timerFunc()
+    timerFunc()   // 等这个事件循环中的同步代码执行完毕后，再对回调队列进行批处理
     waiting = true
   }
 }
