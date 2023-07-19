@@ -1,11 +1,17 @@
 import { initState } from './state'
 import { compileToFunction } from './compiler/index'
 import { mountComponent } from './lifecycle'
+import { mergeOptions } from './utils'
+import { callHook } from './lifecycle'
 export function initMixin(Vue) {
   Vue.prototype._init = function (options) {// 用于初始化操作
     const vm = this;
-    vm.$options = options  // 将用户的选项挂载到实例上
+    // 将用户选项混入到全局选项中，然后赋值给实例选项，所以实例可以访问到全局的一些东西
+    vm.$options = mergeOptions(Vue.options, options)  // 将用户的选项挂载到实例上
+
+    callHook(vm, 'beforeCreate')
     initState(vm) // 初始化状态
+    callHook(vm, 'created')
     if (options.el) {
       vm.$mount(options.el) // $mount 实现数据的挂载，渲染数据
     }

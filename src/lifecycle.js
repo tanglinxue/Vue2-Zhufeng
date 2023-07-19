@@ -77,3 +77,13 @@ export function mountComponent(vm, el) {
   const watcher = new Watcher(vm, updateComponent, true)
 
 }
+
+/**
+ * 依次调用 vm 实例上的 hookName 钩子函数
+ */
+export function callHook(vm, hookName) {
+  const hookList = vm.$options[hookName];
+  if (hookList) {
+    hookList.forEach(hook => hook.call(vm))
+  }
+}
